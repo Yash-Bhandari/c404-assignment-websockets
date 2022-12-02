@@ -125,6 +125,7 @@ function addEntity(entity, data) {
     world[entity] = data;
     drawNextFrame(); // (but should we?)
     //XXX: Send a XHTML Request that updates the entity you just modified!
+    sock
 }
 var counter = 0;
 function addEntityWithoutName(data) {
@@ -244,9 +245,6 @@ mouse.mousedraggers.push(function(x,y,clicked,e) {
 });
 
 
-function update() {
-    drawFrame();
-}
 
 
 function wsSetup() {
@@ -266,11 +264,22 @@ function wsSetup() {
             alert("socket on message: " + e);
         }
     }; 
+    return socket
 }
 
-wsSetup();
+sock = wsSetup();
 
 
+function update() {
+    drawFrame();
+    <!-- socket.send("ping") -->
+    Object.keys(world).forEach(entityId => {
+        var entity = world[entityId];
+        if (entity.isNew) {
+        }
+       
+    });
+}
 
 
 // 30 frames per second

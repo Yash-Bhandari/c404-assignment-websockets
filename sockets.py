@@ -18,6 +18,8 @@ from flask import Flask, request
 from flask_sockets import Sockets
 import gevent
 from gevent import queue
+from gevent.pywsgi import WSGIServer
+from geventwebsocket.handler import WebSocketHandler
 import time
 import json
 import os
@@ -69,18 +71,26 @@ myWorld.add_set_listener( set_listener )
 @app.route('/')
 def hello():
     '''Return something coherent here.. perhaps redirect to /static/index.html '''
-    return None
+    return flask.redirect("/static/index.html")
 
 def read_ws(ws,client):
     '''A greenlet function that reads from the websocket and updates the world'''
     # XXX: TODO IMPLEMENT ME
-    return None
+    while True:
+        ws.send("Hello from the server!")
+        time.sleep(1)
 
 @sockets.route('/subscribe')
 def subscribe_socket(ws):
     '''Fufill the websocket URL of /subscribe, every update notify the
        websocket and read updates from the websocket '''
-    # XXX: TODO IMPLEMENT ME
+    # ws.send("hello")
+    # gevent.spawn(read_ws, ws, None)
+    while not ws.closed:
+        # block here
+        message = ws.receive()
+        print(f"recieved {message}")
+        ws.send("We heard you say this: " + message)
     return None
 
 
@@ -104,7 +114,7 @@ def update(entity):
 @app.route("/world", methods=['POST','GET'])    
 def world():
     '''you should probably return the world here'''
-    return None
+    return myWorld.world()
 
 @app.route("/entity/<entity>")    
 def get_entity(entity):
@@ -125,4 +135,5 @@ if __name__ == "__main__":
         and run
         gunicorn -k flask_sockets.worker sockets:app
     '''
-    app.run()
+    server = WSGIServer(('', 5000), app, handler_class=WebSocketHandler)
+    server.serve_forever()
