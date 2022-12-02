@@ -20,6 +20,7 @@ import gevent
 from gevent import queue
 from gevent.pywsgi import WSGIServer
 from geventwebsocket.handler import WebSocketHandler
+from geventwebsocket.exceptions import WebSocketError
 import time
 import json
 import os
@@ -49,8 +50,12 @@ class World:
 
     def update_listeners(self, entity):
         '''update the set listeners'''
+        still_listening = []
         for listener in self.listeners:
-            listener(entity, self.get(entity))
+            success = listener({'type': 'new', 'entity': self.get(entity)})
+            if success:
+                still_listening.append(listener)
+        self.listeners = still_listening
 
     def clear(self):
         self.space = dict()
@@ -63,36 +68,42 @@ class World:
 
 myWorld = World()        
 
-def set_listener( entity, data ):
-    ''' do something with the update ! '''
-
-myWorld.add_set_listener( set_listener )
-        
 @app.route('/')
 def hello():
     '''Return something coherent here.. perhaps redirect to /static/index.html '''
     return flask.redirect("/static/index.html")
 
+
+def create_listener(ws):
+    def listener(message):
+        try:
+            ws.send(json.dumps(message))
+            return True
+        except WebSocketError:
+            return False
+    return listener
+
 def read_ws(ws,client):
     '''A greenlet function that reads from the websocket and updates the world'''
-    # XXX: TODO IMPLEMENT ME
-    while True:
-        ws.send("Hello from the server!")
-        print('send message')
-        time.sleep(1)
+    myWorld.add_set_listener(create_listener(ws))
+    while not ws.closed:
+        message = ws.receive()
+        print(f"recieved {message}")
+        # ws.send("We heard you say this: " + message)
+        data = json.loads(message)
+        myWorld.set(data['id'], data)
 
 @sockets.route('/subscribe')
 def subscribe_socket(ws):
     '''Fufill the websocket URL of /subscribe, every update notify the
        websocket and read updates from the websocket '''
     # ws.send("hello")
-    # gevent.spawn(read_ws, ws, None)
     read_ws(ws, None)
+    # gevent.spawn(read_ws, ws, None)
     while not ws.closed:
         # block here
         message = ws.receive()
         print(f"recieved {message}")
-        ws.send("We heard you say this: " + message)
     return None
 
 
@@ -116,7 +127,9 @@ def update(entity):
 @app.route("/world", methods=['POST','GET'])    
 def world():
     '''you should probably return the world here'''
-    return myWorld.world()
+    if myWorld.world() is not None:
+        return myWorld.world()
+    return {}
 
 @app.route("/entity/<entity>")    
 def get_entity(entity):
@@ -127,7 +140,8 @@ def get_entity(entity):
 @app.route("/clear", methods=['POST','GET'])
 def clear():
     '''Clear the world out!'''
-    return None
+    myWorld.world = {}
+    return flask.Response(status=204)
 
 
 
