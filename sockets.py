@@ -52,7 +52,7 @@ class World:
         '''update the set listeners'''
         still_listening = []
         for listener in self.listeners:
-            success = listener({'type': 'new', 'entity': self.get(entity)})
+            success = listener({entity: self.get(entity)})
             if success:
                 still_listening.append(listener)
         self.listeners = still_listening
@@ -90,8 +90,13 @@ def read_ws(ws,client):
         message = ws.receive()
         print(f"recieved {message}")
         # ws.send("We heard you say this: " + message)
-        data = json.loads(message)
-        myWorld.set(data['id'], data)
+        try:
+            data = json.loads(message)
+        except Exception:
+            continue
+        entity_id = list(data.keys())[0]
+        myWorld.set(entity_id, data[entity_id])
+    
 
 @sockets.route('/subscribe')
 def subscribe_socket(ws):
@@ -140,7 +145,7 @@ def get_entity(entity):
 @app.route("/clear", methods=['POST','GET'])
 def clear():
     '''Clear the world out!'''
-    myWorld.world = {}
+    myWorld.clear()
     return flask.Response(status=204)
 
 
