@@ -78,6 +78,7 @@ def read_ws(ws,client):
     # XXX: TODO IMPLEMENT ME
     while True:
         ws.send("Hello from the server!")
+        print('send message')
         time.sleep(1)
 
 @sockets.route('/subscribe')
@@ -86,6 +87,7 @@ def subscribe_socket(ws):
        websocket and read updates from the websocket '''
     # ws.send("hello")
     # gevent.spawn(read_ws, ws, None)
+    read_ws(ws, None)
     while not ws.closed:
         # block here
         message = ws.receive()
@@ -135,5 +137,6 @@ if __name__ == "__main__":
         and run
         gunicorn -k flask_sockets.worker sockets:app
     '''
-    server = WSGIServer(('', 5000), app, handler_class=WebSocketHandler)
-    server.serve_forever()
+    # server = WSGIServer(('', 5000), app, handler_class=WebSocketHandler)
+    # server.serve_forever()
+    app.run()

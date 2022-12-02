@@ -252,13 +252,14 @@ function wsSetup() {
     socket = new WebSocket(url);
     socket.onopen = function() {
         //XXX: TODO What are you going to do here?
+        console.log('Opened succesfully')
     };
     socket.onerror = function(msg) {
         debug("WebSocket Error:" + msg.data);
     };
     socket.onmessage = function(msg) {  
         try {
-            debug("WebSocket Recv:" + msg.data);
+            console.log("WebSocket Recv:" + msg.data);
             //XXX: TODO What are you going to do here?            
         } catch (e) {
             alert("socket on message: " + e);
@@ -268,6 +269,7 @@ function wsSetup() {
 }
 
 sock = wsSetup();
+console.log(sock)
 
 
 function update() {
